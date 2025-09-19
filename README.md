@@ -71,14 +71,14 @@ There is an urgent need for a **smart health monitoring and early warning system
 
 ## 📂 Repository Structure (Proposed)
 smart-health-monitoring/
-│── backend/ # FastAPI/Node backend, APIs, database schema
-│── mobile-app/ # React Native/Flutter app source code
-│── ml-models/ # ML notebooks, training pipeline, model artifacts
-│── dashboard/ # React dashboard for visualization
-│── docs/ # Documentation, diagrams, reports
-│── sensors/ # IoT integration scripts (MQTT, data ingestion)
-│── scripts/ # Deployment, utilities
-│── README.md # Project overview
+   │── backend/ # FastAPI/Node backend, APIs, database schema
+   │── mobile-app/ # React Native/Flutter app source code
+   │── ml-models/ # ML notebooks, training pipeline, model artifacts
+   │── dashboard/ # React dashboard for visualization
+   │── docs/ # Documentation, diagrams, reports
+   │── sensors/ # IoT integration scripts (MQTT, data ingestion)
+   │── scripts/ # Deployment, utilities
+   │── README.md # Project overview
 
 ---
 
