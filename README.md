@@ -70,15 +70,15 @@ There is an urgent need for a **smart health monitoring and early warning system
 ---
 
 ## 📂 Repository Structure (Proposed)
-smart-health-monitoring/
-   │── backend/ # FastAPI/Node backend, APIs, database schema
-   │── mobile-app/ # React Native/Flutter app source code
-   │── ml-models/ # ML notebooks, training pipeline, model artifacts
-   │── dashboard/ # React dashboard for visualization
-   │── docs/ # Documentation, diagrams, reports
-   │── sensors/ # IoT integration scripts (MQTT, data ingestion)
-   │── scripts/ # Deployment, utilities
-   │── README.md # Project overview
+smart-health-monitoring/  
+   │── backend/ # FastAPI/Node backend, APIs, database schema  
+   │── mobile-app/ # React Native/Flutter app source code  
+   │── ml-models/ # ML notebooks, training pipeline, model artifacts  
+   │── dashboard/ # React dashboard for visualization  
+   │── docs/ # Documentation, diagrams, reports  
+   │── sensors/ # IoT integration scripts (MQTT, data ingestion)  
+   │── scripts/ # Deployment, utilities  
+   │── README.md # Project overview  
 
 ---
 
@@ -91,13 +91,13 @@ smart-health-monitoring/
 
 ---
 
-## 📅 Roadmap (12-Week Example)
-- **Week 1–2** → Finalize data schema, design UI, backend setup  
-- **Week 3–5** → Mobile MVP (offline forms + sync), basic API  
-- **Week 6–7** → Web dashboard MVP, SMS gateway integration  
-- **Week 8–9** → Pilot deployment in 1–3 villages  
-- **Week 10** → Rule-based alerts + baseline ML  
-- **Week 11–12** → Refined ML models, multilingual content, evaluation  
+## 📅 Roadmap
+- **→** Finalize data schema, design UI, backend setup  
+- **→** Mobile MVP (offline forms + sync), basic API  
+- **→** Web dashboard MVP, SMS gateway integration  
+- **→** Pilot deployment in 1–3 villages  
+- **→** Rule-based alerts + baseline ML  
+- **→** Refined ML models, multilingual content, evaluation  
 
 ---
 
@@ -122,14 +122,6 @@ smart-health-monitoring/
 2. Commit changes with clear messages.  
 3. Open a Pull Request with detailed explanation.  
 4. Ensure all code is documented and tested before PR.  
-
----
-
-## 📧 Contact
-Project Lead: **Mohsin Ansari**  
-📩 Email: [your-email@example.com]  
-🌐 GitHub: [your-github-profile]  
-💼 LinkedIn: [your-linkedin-profile]  
 
 ---
 
