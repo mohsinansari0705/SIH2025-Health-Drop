@@ -1,0 +1,9 @@
+Database -> Supabase
+    Project URL - https://hzicxykqtlxhaalgqkey.supabase.co
+    Service role key - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6aWN4eWtxdGx4aGFhbGdxa2V5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODM1MjkyMCwiZXhwIjoyMDczOTI4OTIwfQ.x9r2U3_YOkCAdy87fzhd35si0c6l4AggnN5A228qCxM
+    client/publishable (anon) key - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6aWN4eWtxdGx4aGFhbGdxa2V5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNTI5MjAsImV4cCI6MjA3MzkyODkyMH0.BNzScC1Q14v1kQIdXEgINcChp8wu854alEUptgvOC00
+
+
+
+role for accessing the application
+    'admin', 'clinic', 'asha_worker', 'volunteer'
