@@ -1,19 +1,45 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[codz]
-*$py.class
+# Node modules
+/node_modules/
+# Expo files (if using Expo)
+/.expo/
+/.expo-shared/
 
-# Environments
+# React Native build folders
+/android/app/build/
+/ios/Pods/
+/ios/build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
 .env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-app_env/
+.env.local
+.env.*.local
 
-# Testing python files
-tst.py
-test.py
+# macOS
+.DS_Store
+
+# Linux
+*.swp
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# JetBrains IDEs (WebStorm, IntelliJ)
+.idea/
+
+# VSCode
+.vscode/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Others
+*.orig
