@@ -11,6 +11,8 @@ import {
   Platform,
   Image,
   Dimensions,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types/profile';
@@ -34,6 +36,13 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   const [organization, setOrganization] = useState('');
   const [location, setLocation] = useState('');
 
+  // OTP related state
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+
   const roles: { value: Profile['role']; label: string }[] = [
     { value: 'admin', label: 'Admin' },
     { value: 'clinic', label: 'Clinic' },
@@ -51,25 +60,22 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
 
   const handleAuth = async () => {
     if (isLogin) {
-      if (!email && !phone) {
-        Alert.alert('Error', 'Please enter either email or phone number');
-        return;
-      }
-      if (!password) {
-        Alert.alert('Error', 'Please enter password');
-        return;
-      }
-    } else {
-      if (!email || !phone || !password || !fullName || !organization || !location) {
-        Alert.alert('Error', 'Please fill in all fields');
+      // For login, only use email (remove phone login for now)
+      if (!email || !password) {
+        Alert.alert('Error', 'Please enter email and password');
         return;
       }
       if (!isValidEmail(email)) {
         Alert.alert('Error', 'Please enter a valid email address');
         return;
       }
-      if (!isValidPhone(phone)) {
-        Alert.alert('Error', 'Please enter a valid phone number');
+    } else {
+      if (!email || !password || !fullName || !organization || !location) {
+        Alert.alert('Error', 'Please fill in all fields');
+        return;
+      }
+      if (!isValidEmail(email)) {
+        Alert.alert('Error', 'Please enter a valid email address');
         return;
       }
     }
@@ -78,57 +84,126 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     
     try {
       if (isLogin) {
-        // Login - try email first, then phone
-        let loginData;
-        if (email && isValidEmail(email)) {
-          loginData = { email, password };
-        } else if (phone && isValidPhone(phone)) {
-          loginData = { phone, password };
-        } else {
-          Alert.alert('Error', 'Please enter a valid email or phone number');
-          setLoading(false);
-          return;
-        }
-
-        const { error } = await supabase.auth.signInWithPassword(loginData);
+        // Login with email only
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         
         if (error) {
           Alert.alert('Login Error', error.message);
         } else {
-          Alert.alert('Success', 'Login successful!');
           onAuthSuccess();
         }
       } else {
-        // Sign up with email (OTP will be sent)
-        const { data, error } = await supabase.auth.signUp({
+        // First create user with password for future logins
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
-          phone,
           options: {
+            emailRedirectTo: undefined, // Disable email confirmation
             data: {
               full_name: fullName,
               role,
               organization,
               location,
+              phone,
             }
           }
         });
+
+        if (signUpError) {
+          Alert.alert('Sign Up Error', signUpError.message);
+          return;
+        }
+
+        // Then send OTP for verification (without creating another user)
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          email: email,
+        });
         
-        if (error) {
-          Alert.alert('Sign Up Error', error.message);
+        if (otpError) {
+          Alert.alert('OTP Error', otpError.message);
         } else {
-          Alert.alert(
-            'Check Your Email!',
-            'We sent you a verification link. Please check your email and click the link to verify your account.',
-            [{ text: 'OK', onPress: () => setIsLogin(true) }]
-          );
+          setUserEmail(email);
+          setShowOtpModal(true);
         }
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
+      console.error('Auth error:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOtpVerification = async () => {
+    if (!otpCode || otpCode.length !== 6) {
+      Alert.alert('Error', 'Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setOtpLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: userEmail,
+        token: otpCode,
+        type: 'email'
+      });
+      
+      if (error) {
+        Alert.alert('OTP Error', error.message);
+      } else if (data.user) {
+        // Check if profile already exists (might be created by trigger)
+        const { data: existingProfile, error: profileCheckError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileCheckError && profileCheckError.code === 'PGRST116') {
+          // Profile doesn't exist, create it
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              full_name: fullName,
+              role,
+              organization,
+              location,
+              created_at: new Date().toISOString(),
+              is_active: true,
+            });
+
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+          }
+        }
+
+        setShowOtpModal(false);
+        setShowSuccessModal(true);
+        setOtpCode('');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred');
+      console.error('OTP verification error:', error);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleSuccessNext = () => {
+    setShowSuccessModal(false);
+    // Reset form
+    setEmail('');
+    setPassword('');
+    setFullName('');
+    setOrganization('');
+    setLocation('');
+    setPhone('');
+    setIsLogin(true);
+    onAuthSuccess();
   };
 
   return (
@@ -165,20 +240,6 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
-                />
-              </View>
-
-              <Text style={styles.orText}>OR</Text>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Phone Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your phone number"
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  autoComplete="tel"
                 />
               </View>
 
@@ -327,6 +388,81 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* OTP Verification Modal */}
+      <Modal
+        visible={showOtpModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowOtpModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Enter Verification Code</Text>
+            <Text style={styles.modalSubtitle}>
+              We've sent a 6-digit verification code to {userEmail}
+            </Text>
+            
+            <View style={styles.otpContainer}>
+              <TextInput
+                style={styles.otpInput}
+                value={otpCode}
+                onChangeText={setOtpCode}
+                placeholder="000000"
+                keyboardType="numeric"
+                maxLength={6}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.primaryButton, otpLoading && styles.buttonDisabled]}
+              onPress={handleOtpVerification}
+              disabled={otpLoading}
+            >
+              {otpLoading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Verify OTP</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowOtpModal(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal
+        visible={showSuccessModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.successIcon}>
+              <Text style={styles.successCheckmark}>✓</Text>
+            </View>
+            
+            <Text style={styles.modalTitle}>Account Created Successfully!</Text>
+            <Text style={styles.modalSubtitle}>
+              Your account has been created and verified. You can now start using HealthDrop.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleSuccessNext}
+            >
+              <Text style={styles.primaryButtonText}>Next</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -460,6 +596,83 @@ const styles = StyleSheet.create({
   },
   switchTextBold: {
     color: '#3498db',
+    fontWeight: 'bold',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 30,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    marginBottom: 25,
+    lineHeight: 22,
+  },
+  otpContainer: {
+    width: '100%',
+    marginBottom: 25,
+  },
+  otpInput: {
+    borderWidth: 2,
+    borderColor: '#e1e8ed',
+    borderRadius: 12,
+    padding: 20,
+    textAlign: 'center',
+    fontSize: 24,
+    letterSpacing: 8,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    backgroundColor: '#f8fafe',
+  },
+  cancelButton: {
+    marginTop: 15,
+    padding: 15,
+  },
+  cancelButtonText: {
+    color: '#7f8c8d',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  successIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#27ae60',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  successCheckmark: {
+    color: 'white',
+    fontSize: 40,
     fontWeight: 'bold',
   },
 });

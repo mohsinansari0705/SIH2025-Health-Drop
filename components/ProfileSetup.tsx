@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,20 @@ export default function ProfileSetup({ userId, onProfileComplete }: ProfileSetup
   const [organization, setOrganization] = useState('');
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Try to get user metadata from auth
+    const getUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata) {
+        setFullName(user.user_metadata.full_name || '');
+        setRole(user.user_metadata.role || 'volunteer');
+        setOrganization(user.user_metadata.organization || '');
+        setLocation(user.user_metadata.location || '');
+      }
+    };
+    getUserData();
+  }, []);
 
   const roles: { value: Profile['role']; label: string }[] = [
     { value: 'admin', label: 'Admin' },
