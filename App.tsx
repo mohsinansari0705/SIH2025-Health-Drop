@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { supabase } from './lib/supabase';
+import { ThemeProvider } from './lib/ThemeContext';
 import AuthScreen from './components/AuthScreen';
 import ProfileSetup from './components/ProfileSetup';
-import HelloWorld from './components/HelloWorld';
+import IndexPage from './pages/IndexPage';
 import { Session } from '@supabase/supabase-js';
 import { Profile } from './types/profile';
 
-export default function App() {
+function AppContent() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +43,9 @@ export default function App() {
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Add a small delay to allow profile creation to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -50,8 +54,12 @@ export default function App() {
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
-      } else {
+      } else if (data) {
         setProfile(data);
+      } else {
+        // Profile not found, might need to create one
+        console.log('No profile found for user:', userId);
+        setProfile(null);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -78,21 +86,29 @@ export default function App() {
     return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
   }
 
-  // Profile is created during signup, so we can go directly to HelloWorld
-  // if (!profile) {
-  //   return (
-  //     <ProfileSetup
-  //       userId={session.user.id}
-  //       onProfileComplete={handleProfileComplete}
-  //     />
-  //   );
-  // }
+  // Check if profile exists, if not show ProfileSetup
+  if (!profile) {
+    return (
+      <ProfileSetup
+        userId={session.user.id}
+        onProfileComplete={handleProfileComplete}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <HelloWorld userEmail={session.user.email || 'Unknown'} />
+      <IndexPage userName={session.user.email?.split('@')[0] || 'User'} />
       <StatusBar style="auto" />
     </View>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 
